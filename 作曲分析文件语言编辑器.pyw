@@ -606,14 +606,6 @@ class Root(Tk):
         except:
             pass
 
-    def play_select_text(self, editor, event=None):
-        try:
-            selected_text = self.inputs.selection_get()
-            exec(f"play({selected_text})")
-        except:
-            self.outputs.delete('1.0', END)
-            self.outputs.insert(END, '选中的语句无法播放')
-
     def rightKey(self, event, editor):
         self.menubar.delete(0, END)
         self.menubar.add_command(label='剪切',
@@ -633,9 +625,6 @@ class Root(Tk):
                                  foreground=self.foreground_color)
         self.menubar.add_command(label='恢复',
                                  command=lambda: self.inputs_redo(editor),
-                                 foreground=self.foreground_color)
-        self.menubar.add_command(label='播放选中语句',
-                                 command=lambda: self.play_select_text(editor),
                                  foreground=self.foreground_color)
         self.menubar.post(event.x_root, event.y_root)
 
