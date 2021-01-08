@@ -51,7 +51,7 @@ class Root(Tk):
         style.map('TCheckbutton',
                   background=[('active', self.active_background_color)])
         self.inputs_text = ttk.Label(self,
-                                     text='请在这里输入 musicpy 音乐代码语句',
+                                     text='请在这里输入作曲分析文件语言',
                                      background=self.background_color)
         self.inputs = Text(self,
                            wrap='none',
