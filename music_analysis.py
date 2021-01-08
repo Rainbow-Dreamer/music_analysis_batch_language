@@ -1,4 +1,8 @@
+key_header = 'key: '
+
+
 def grammar_translate(current):
+    global key_header
     result = ''
     interval = 1
     comments = ''
@@ -8,8 +12,13 @@ def grammar_translate(current):
     show_chord_analysis = 'T'
     if current[:2] == 'k.':
         current_key = current[2:]
-        result += f'key: {current_key}'
+        result += f'{key_header}{current_key}'
         return result
+    elif current[:2] == 'k!':
+        new_key_header = current[2:]
+        if new_key_header:
+            key_header = new_key_header
+        return
     parts = current.split('$')
     length = len(parts)
     if length == 1:
@@ -41,7 +50,7 @@ def grammar_translate(current):
             elif each[:3] == 'ca=':
                 show_chord_analysis = each[3:]
     else:
-        return '当前的语句语法不合法'
+        return
     bar_chords_split = bar_chords.split(';')
     if show_bar == 'T':
         bar_num = bar_chords_split[0]
@@ -74,7 +83,7 @@ def grammar_translate(current):
             chord_name = arrow_character + chord_name
         result += f'{chord_name}{" "*interval}{bar_line_character}{" "*interval}'
     if current_chord_num == 0:
-        return '当前的语句没有任何和弦'
+        return
     bar_line_character_len = len(bar_line_character)
     recent_line = result[result.rfind('\n') + 1:]
     result = result[:(-2 * interval - bar_line_character_len)]
@@ -111,5 +120,5 @@ def grammar_translate(current):
 
 def whole_translate(text, interval=2):
     results = [grammar_translate(i) if i else '' for i in text.split('\n')]
-    results = [i for i in results if not i.startswith('当前')]
+    results = [i for i in results if i is not None]
     return '\n'.join(results)

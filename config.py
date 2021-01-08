@@ -6,11 +6,11 @@
     'font_size': 15,
     'background_mode': 'white',
     'grammar_highlight': {
-        'red': ['/', '@', '^', '~', '%', '&', '|', '+', '-', '?', '*'],
-        'blue': ['getchord', 'chord', 'trans', 'chd', 'C'],
-        'green': ['toScale', 'scale', 'S'],
-        'orange': ['toNote', 'note', 'N'],
-        'violet': ['piece', 'build', 'P']
+        'red': [';'],
+        'blue': ['$'],
+        'violet': ['ca=', 'c=', 's=', 'b=', 'a=', 'i='],
+        'green': ['k.'],
+        'deep pink': ['k!']
     },
     'background_color': 'alice blue',
     'foreground_color': 'black',
