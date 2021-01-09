@@ -126,6 +126,11 @@ class Root(Tk):
         self.grammar_box.place(x=600, y=0)
         self.wraplines_button.place(x=700, y=0)
 
+        self.outputs_file_button = ttk.Button(self,
+                                              text='输出文件',
+                                              command=self.outputs_file)
+        self.outputs_file_button.place(x=800, y=0)
+
         self.save_button = ttk.Button(self, text='保存', command=self.save)
         self.save_button.place(x=80, y=0)
         self.pre_input = ''
@@ -369,6 +374,10 @@ class Root(Tk):
                                                 filetype=(("所有文件", "*.*"), ),
                                                 defaultextension=".txt")
         if filename:
+            memory = filename[:filename.rindex('/') + 1]
+            with open('browse memory.txt', 'w') as f:
+                f.write(memory)
+            self.last_place = memory
             with open(filename, 'w', encoding='utf-8-sig') as f:
                 f.write(self.inputs.get('1.0', END))
 
@@ -627,6 +636,19 @@ class Root(Tk):
                                  command=lambda: self.inputs_redo(editor),
                                  foreground=self.foreground_color)
         self.menubar.post(event.x_root, event.y_root)
+
+    def outputs_file(self):
+        filename = filedialog.asksaveasfilename(initialdir=self.last_place,
+                                                title="保存生成的作曲分析内容",
+                                                filetype=(("所有文件", "*.*"), ),
+                                                defaultextension=".txt")
+        if filename:
+            memory = filename[:filename.rindex('/') + 1]
+            with open('browse memory.txt', 'w') as f:
+                f.write(memory)
+            self.last_place = memory
+            with open(filename, 'w', encoding='utf-8-sig') as f:
+                f.write(self.outputs.get('1.0', END))
 
 
 root = Root()
