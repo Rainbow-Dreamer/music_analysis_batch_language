@@ -1,3 +1,5 @@
-��ʹ�ñ༭��ǰ����ȷ�������а�װpython���汾 >= 3.6����Ȼ��Ҫ��װpillow���python�⣬
-��cmd������pip install pillowȻ�󰴻س����оͿ����ˡ�
-��Щ������ɺ�Ϳ��Գɹ��򿪱༭����ʹ���ˡ�
+﻿电脑没有安装python的可以直接打开"作曲分析文件语言编辑器.exe"这个文件使用编辑器。
+
+如果电脑有安装python(版本 >= 3.6)，那么也可以打开"作曲分析文件语言编辑器.pyw"使用编辑器，
+在打开之前要先安装pillow这个python库，在cmd里输入pip install pillow然后按回车运行就可以了。
+这些步骤完成后就可以成功打开编辑器来使用了。
