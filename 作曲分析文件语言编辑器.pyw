@@ -81,7 +81,7 @@ class Root(Tk):
         self.outputs = Text(self, wrap='none')
         self.outputs.configure(font=(self.font_type, self.font_size))
         self.outputs_text.place(x=600, y=30)
-        self.outputs.place(x=600, y=60, width=600, height=500)
+        self.outputs.place(x=614, y=60, width=600, height=500)
         outputs_v = ttk.Scrollbar(self,
                                   orient="vertical",
                                   command=self.outputs.yview)
