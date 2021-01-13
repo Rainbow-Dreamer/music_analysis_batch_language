@@ -14,6 +14,7 @@ with open('config.py', encoding='utf-8-sig') as f:
 def print(obj):
     root.outputs.insert(END, str(obj))
     root.outputs.insert(END, '\n')
+    root.outputs.see(INSERT)
 
 
 class Root(Tk):
@@ -244,6 +245,7 @@ class Root(Tk):
                           errors='ignore') as f:
                     self.inputs.delete('1.0', END)
                     self.inputs.insert(END, f.read())
+                    self.inputs.see(INSERT)
                     self.inputs.mark_set(INSERT, '1.0')
                     if self.is_grammar:
                         self.after(100, self.grammar_highlight_func)
