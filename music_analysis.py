@@ -105,7 +105,10 @@ def grammar_translate(current):
                 if current_play and current_play_num != 0:
                     chord_inds[current_play_num - 1] += 2
             else:
-                inds = chord_inds[current_ind - 1]
+                try:
+                    inds = chord_inds[current_ind - 1]
+                except:
+                    return
                 last_degree = chord_degrees[current_ind - 1]
                 last_degree_len = len(last_degree)
                 last_chord = current_chords[current_ind - 1]
