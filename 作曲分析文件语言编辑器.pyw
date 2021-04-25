@@ -21,7 +21,7 @@ class Root(Tk):
     def __init__(self):
         super(Root, self).__init__()
         self.minsize(1250, 600)
-        self.title('musicpy 编辑器')
+        self.title('作曲分析文件语言编辑器')
         self.focus_set()
         self.background_color = config_dict['background_color']
         self.foreground_color = config_dict['foreground_color']
