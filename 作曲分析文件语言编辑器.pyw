@@ -5,6 +5,7 @@ from tkinter import font
 from tkinter.scrolledtext import ScrolledText
 from PIL import Image, ImageTk
 from tkinter import filedialog
+
 function_names = dir() + ['print']
 from music_analysis import whole_translate
 with open('config.py', encoding='utf-8-sig') as f:
@@ -206,6 +207,30 @@ class Root(Tk):
         self.inputs.bind("<Button-3>", lambda x: self.rightKey(x, self.inputs))
         self.first_load_config()
 
+        self.inputs.bind("<Button-3>", lambda x: self.rightKey(x, self.inputs))
+        self.first_load_config()
+        self.inputs.bind('<Control-w>', self.openfile)
+        self.inputs.bind('<Control-s>', self.save)
+        self.inputs.bind('<Control-q>', lambda e: self.destroy())
+        self.inputs.bind('<Control-r>', lambda e: self.runs())
+        self.inputs.bind('<Control-g>',
+                         lambda e: self.change_background_color_mode(True))
+        self.inputs.bind('<Control-b>', lambda e: self.config_options())
+        self.inputs.bind('<Control-MouseWheel>',
+                         lambda e: self.change_font_size(e))
+
+        self.config_box_open = False
+
+    def change_font_size(self, e):
+        num = e.delta // 120
+        self.font_size += num
+        if self.font_size < 1:
+            self.font_size = 1
+        config_dict['font_size'] = self.font_size
+        self.inputs.configure(font=(self.font_type, self.font_size))
+        self.outputs.configure(font=(self.font_type, self.font_size))
+        self.save_config(True)
+
     def change_background_color_mode(self, turn=True):
         if turn:
             self.bg_mode = 'white' if self.bg_mode == 'black' else 'black'
@@ -231,7 +256,7 @@ class Root(Tk):
             config_dict['background_mode'] = self.bg_mode
             self.save_config(True)
 
-    def openfile(self):
+    def openfile(self, e=None):
         filename = filedialog.askopenfilename(initialdir=self.last_place,
                                               title="选择文件",
                                               filetype=(("所有文件", "*.*"), ))
@@ -269,9 +294,19 @@ class Root(Tk):
     def first_load_config(self):
         self.get_config_dict = {}
 
+    def close_config_box(self):
+        self.config_window.destroy()
+        self.config_box_open = False
+
     def config_options(self):
+        if self.config_box_open:
+            self.config_window.focus_set()
+            return
+        self.config_box_open = True
         self.config_window = Toplevel(self, bg=self.background_color)
         self.config_window.minsize(800, 620)
+        self.config_window.title('设置')
+        self.config_window.protocol("WM_DELETE_WINDOW", self.close_config_box)
         self.get_config_dict = {}
         counter = 0
         for each in config_dict:
@@ -370,7 +405,7 @@ class Root(Tk):
         except:
             pass
 
-    def save(self):
+    def save(self, e=None):
         filename = filedialog.asksaveasfilename(initialdir=self.last_place,
                                                 title="保存输入文本",
                                                 filetype=(("所有文件", "*.*"), ),
