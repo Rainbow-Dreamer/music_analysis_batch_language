@@ -1,5 +1,5 @@
 ﻿config_dict = {
-    'eachline_character': 58,
+    'eachline_character': 35,
     'pairing_symbols': ['()', '[]', "''", '""'],
     'wraplines_number': 2,
     'font_type': 'Consolas',
@@ -15,6 +15,6 @@
     'background_color': 'alice blue',
     'foreground_color': 'black',
     'active_background_color': 'light green',
-    'day_and_night_colors': ('white', 'gray8')
+    'day_and_night_colors': ('white', 'gray8'),
+    'button_background_color': 'lavender'
 }
-path_enable_list = ['background_image']

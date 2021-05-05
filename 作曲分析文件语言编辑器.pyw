@@ -3,8 +3,10 @@ from tkinter import *
 from tkinter import ttk
 from tkinter import font
 from tkinter.scrolledtext import ScrolledText
-from PIL import Image, ImageTk
+import PIL.Image, PIL.ImageTk
 from tkinter import filedialog
+from yapf.yapflib.yapf_api import FormatCode
+from copy import deepcopy as copy
 
 function_names = dir() + ['print']
 from music_analysis import whole_translate
@@ -28,6 +30,7 @@ class Root(Tk):
         self.foreground_color = config_dict['foreground_color']
         self.active_background_color = config_dict['active_background_color']
         self.day_color, self.night_color = config_dict['day_and_night_colors']
+        self.button_background_color = config_dict['button_background_color']
         self.configure(background=self.background_color)
         style = ttk.Style()
         style.theme_use('alt')
@@ -48,10 +51,24 @@ class Root(Tk):
         style.configure('TLabel',
                         background=self.background_color,
                         foreground=self.foreground_color)
+        style.configure('New.TButton',
+                        background=self.button_background_color,
+                        foreground=self.foreground_color,
+                        width=10,
+                        borderwidth=0,
+                        focusthickness=3,
+                        focuscolor='none')
         style.map('TButton',
                   background=[('active', self.active_background_color)])
         style.map('TCheckbutton',
                   background=[('active', self.active_background_color)])
+        style.map('New.TButton',
+                  background=[('active', self.active_background_color)])
+        self.get_config_dict = copy(config_dict)
+        self.get_config_dict = {
+            i: str(j)
+            for i, j in self.get_config_dict.items()
+        }
         self.inputs_text = ttk.Label(self,
                                      text='请在这里输入作曲分析文件语言',
                                      background=self.background_color)
@@ -129,8 +146,9 @@ class Root(Tk):
         self.wraplines_button.place(x=700, y=0)
 
         self.outputs_file_button = ttk.Button(self,
-                                              text='输出文件',
-                                              command=self.outputs_file)
+                                              text='输出生成的作曲分析内容',
+                                              command=self.outputs_file,
+                                              width=23)
         self.outputs_file_button.place(x=800, y=0)
 
         self.save_button = ttk.Button(self, text='保存', command=self.save)
@@ -153,13 +171,6 @@ class Root(Tk):
         self.file_top = ttk.Button(self,
                                    text='文件',
                                    command=self.file_top_make_menu)
-        #self.file_top.bind(
-        #'<Enter>', lambda e: self.file_top.configure(
-        #background=self.active_background_color))
-        #self.file_top.bind(
-        #'<Leave>', lambda e: self.file_top.configure(background=self.
-        #background_color))
-        #self.file_top.bind('<Button-1>', self.file_top_make_menu)
         self.file_menu = Menu(self,
                               tearoff=0,
                               bg=self.background_color,
@@ -167,12 +178,19 @@ class Root(Tk):
         self.file_menu.add_command(label='打开',
                                    command=self.openfile,
                                    foreground=self.foreground_color)
-        self.file_menu.add_command(label='保存',
+        self.file_menu.add_command(label='保存代码',
+                                   command=self.save_current_file,
+                                   foreground=self.foreground_color)
+        self.file_menu.add_command(label='保存输出内容',
+                                   command=self.outputs_file,
+                                   foreground=self.foreground_color)
+        self.file_menu.add_command(label='另存为',
                                    command=self.save,
                                    foreground=self.foreground_color)
         self.file_menu.add_command(label='设置',
                                    command=self.config_options,
                                    foreground=self.foreground_color)
+
         self.file_top.place(x=0, y=0)
         self.config_button = ttk.Button(self,
                                         text='设置',
@@ -188,7 +206,7 @@ class Root(Tk):
         self.auto_complete_run()
         self.realtime_run()
         try:
-            with open('browse memory.txt') as f:
+            with open('browse memory.txt', encoding='utf-8-sig') as f:
                 self.last_place = f.read()
         except:
             self.last_place = "/"
@@ -199,19 +217,17 @@ class Root(Tk):
             command=self.change_background_color_mode)
         self.turn_bg_mode.place(x=240, y=0)
         self.change_background_color_mode(turn=False)
+        self.last_save = self.inputs.get('1.0', 'end-1c')
 
         self.menubar = Menu(self,
                             tearoff=False,
                             bg=self.background_color,
                             activebackground=self.active_background_color)
         self.inputs.bind("<Button-3>", lambda x: self.rightKey(x, self.inputs))
-        self.first_load_config()
-
-        self.inputs.bind("<Button-3>", lambda x: self.rightKey(x, self.inputs))
-        self.first_load_config()
         self.inputs.bind('<Control-w>', self.openfile)
-        self.inputs.bind('<Control-s>', self.save)
-        self.inputs.bind('<Control-q>', lambda e: self.destroy())
+        self.inputs.bind('<Control-s>', self.save_current_file)
+        self.inputs.bind('<Control-d>', self.outputs_file)
+        self.inputs.bind('<Control-q>', lambda e: self.close_window())
         self.inputs.bind('<Control-r>', lambda e: self.runs())
         self.inputs.bind('<Control-g>',
                          lambda e: self.change_background_color_mode(True))
@@ -220,6 +236,56 @@ class Root(Tk):
                          lambda e: self.change_font_size(e))
 
         self.config_box_open = False
+        self.protocol("WM_DELETE_WINDOW", self.close_window)
+        self.check_if_edited()
+        self.current_filename_path = None
+
+    def check_if_edited(self):
+        current_text = self.inputs.get('1.0', 'end-1c')
+        if current_text != self.last_save:
+            self.title('作曲分析文件语言编辑器 *')
+        else:
+            self.title('作曲分析文件语言编辑器')
+        self.after(100, self.check_if_edited)
+
+    def close_window(self, e=None):
+        current_text = self.inputs.get('1.0', 'end-1c')
+        if current_text != self.last_save:
+            self.ask_save_window = Toplevel(self, bg=self.background_color)
+            self.ask_save_window.wm_overrideredirect(True)
+            self.ask_save_window.minsize(400, 150)
+            ask_save_window_x = self.winfo_x()
+            ask_save_window_y = self.winfo_y()
+            self.ask_save_window.geometry(
+                f"+{ask_save_window_x + 300}+{ask_save_window_y + 200}")
+            self.ask_save_window.ask_save_label = ttk.Label(
+                self.ask_save_window, text='文件已经更改,是否需要保存？')
+            self.ask_save_window.ask_save_label.place(x=0, y=30)
+            self.ask_save_window.save_button = ttk.Button(
+                self.ask_save_window,
+                text='保存',
+                command=self.save_and_quit,
+                style='New.TButton')
+            self.ask_save_window.not_save_button = ttk.Button(
+                self.ask_save_window,
+                text='丢弃',
+                command=self.destroy,
+                style='New.TButton')
+            self.ask_save_window.cancel_button = ttk.Button(
+                self.ask_save_window,
+                text='取消',
+                command=self.ask_save_window.destroy,
+                style='New.TButton')
+            self.ask_save_window.save_button.place(x=0, y=100)
+            self.ask_save_window.not_save_button.place(x=90, y=100)
+            self.ask_save_window.cancel_button.place(x=200, y=100)
+        else:
+            self.destroy()
+
+    def save_and_quit(self):
+        self.save_current_file()
+        if self.current_filename_path:
+            self.destroy()
 
     def change_font_size(self, e):
         num = e.delta // 120
@@ -227,6 +293,7 @@ class Root(Tk):
         if self.font_size < 1:
             self.font_size = 1
         config_dict['font_size'] = self.font_size
+        self.get_config_dict['font_size'] = str(self.font_size)
         self.inputs.configure(font=(self.font_type, self.font_size))
         self.outputs.configure(font=(self.font_type, self.font_size))
         self.save_config(True)
@@ -261,8 +328,9 @@ class Root(Tk):
                                               title="选择文件",
                                               filetype=(("所有文件", "*.*"), ))
         if filename:
+            self.current_filename_path = filename
             memory = filename[:filename.rindex('/') + 1]
-            with open('browse memory.txt', 'w') as f:
+            with open('browse memory.txt', 'w', encoding='utf-8-sig') as f:
                 f.write(memory)
             self.last_place = memory
             try:
@@ -272,6 +340,7 @@ class Root(Tk):
                     self.inputs.insert(END, f.read())
                     self.inputs.see(INSERT)
                     self.inputs.mark_set(INSERT, '1.0')
+                    self.last_save = self.inputs.get('1.0', 'end-1c')
                     if self.is_grammar:
                         self.after(100, self.grammar_highlight_func)
             except:
@@ -291,73 +360,231 @@ class Root(Tk):
         self.outputs.delete('1.0', END)
         self.outputs.insert(END, text)
 
-    def first_load_config(self):
-        self.get_config_dict = {}
-
     def close_config_box(self):
         self.config_window.destroy()
         self.config_box_open = False
+
+    def insert_bool(self, content):
+        self.config_contents.delete('1.0', END)
+        self.config_contents.insert(END, content)
+        self.config_change(0)
+
+    def config_change(self, e):
+        current = self.config_contents.get('1.0', 'end-1c')
+        current_config = self.config_window.choose_config_options.get(ANCHOR)
+        self.get_config_dict[current_config] = current
+
+    def change_search_inds(self, num):
+        self.config_window.search_inds += num
+        if self.config_window.search_inds < 0:
+            self.config_window.search_inds = 0
+        if self.config_window.search_inds_list:
+            search_num = len(self.config_window.search_inds_list)
+            if self.config_window.search_inds >= search_num:
+                self.config_window.search_inds = search_num - 1
+            first = self.config_window.search_inds_list[
+                self.config_window.search_inds]
+            self.config_window.choose_config_options.selection_clear(0, END)
+            self.config_window.choose_config_options.selection_set(first)
+            self.config_window.choose_config_options.selection_anchor(first)
+            self.config_window.choose_config_options.see(first)
+            self.show_current_config_options(0)
+
+    def search_config(self, *args):
+        current = self.config_window.search_entry.get()
+        self.config_window.search_inds_list = [
+            i for i in range(self.config_window.options_num)
+            if current in all_config_options[i]
+        ]
+        if self.config_window.search_inds_list:
+            self.config_window.search_inds = 0
+            first = self.config_window.search_inds_list[
+                self.config_window.search_inds]
+            self.config_window.choose_config_options.selection_clear(0, END)
+            self.config_window.choose_config_options.selection_set(first)
+            self.config_window.choose_config_options.selection_anchor(first)
+            self.config_window.choose_config_options.see(first)
+            self.show_current_config_options(0)
+        else:
+            self.config_window.choose_config_options.selection_clear(0, END)
+
+    def show_current_config_options(self, e):
+        current_config = self.config_window.choose_config_options.get(ANCHOR)
+        self.config_window.config_name.configure(text=current_config)
+        self.config_contents.delete('1.0', END)
+        current_config_value = self.get_config_dict[current_config]
+        self.config_contents.insert(END, current_config_value)
+
+    def choose_filename(self):
+        filename = filedialog.askopenfilename(initialdir='.',
+                                              title="choose filename",
+                                              filetype=(("all files",
+                                                         "*.*"), ))
+        self.config_contents.delete('1.0', END)
+        self.config_contents.insert(END, f"'{filename}'")
+        self.config_change(0)
+
+    def choose_directory(self):
+        directory = filedialog.askdirectory(
+            initialdir='.',
+            title="choose directory",
+        )
+        self.config_contents.delete('1.0', END)
+        self.config_contents.insert(END, f"'{directory}'")
+        self.config_change(0)
 
     def config_options(self):
         if self.config_box_open:
             self.config_window.focus_set()
             return
+        self.get_config_dict = copy(config_dict)
+        self.get_config_dict = {
+            i: str(j)
+            for i, j in self.get_config_dict.items()
+        }
         self.config_box_open = True
         self.config_window = Toplevel(self, bg=self.background_color)
-        self.config_window.minsize(800, 620)
+        self.config_window.minsize(800, 650)
         self.config_window.title('设置')
         self.config_window.protocol("WM_DELETE_WINDOW", self.close_config_box)
-        self.get_config_dict = {}
-        counter = 0
-        for each in config_dict:
-            current_label = ttk.Label(self.config_window,
-                                      text=each,
-                                      background=self.background_color)
-            current_entry = ttk.Entry(self.config_window, width=70)
-            current_entry.insert(0, str(config_dict[each]))
-            current_label.place(x=0, y=counter)
-            current_entry.place(x=150, y=counter)
-            if each in path_enable_list:
-                path_button = ttk.Button(
-                    self.config_window,
-                    text='更改',
-                    command=lambda current_entry=current_entry: self.
-                    search_path(current_entry))
-                path_button.place(x=650, y=counter)
-            counter += 30
-            self.get_config_dict[each] = current_entry
+
+        global all_config_options
+        all_config_options = list(self.get_config_dict.keys())
+        self.options_num = len(all_config_options)
+        global all_config_options_ind
+        all_config_options_ind = {
+            all_config_options[i]: i
+            for i in range(self.options_num)
+        }
+        global config_original
+        config_original = all_config_options.copy()
+        global alpha_config
+        alpha_config = all_config_options.copy()
+        alpha_config.sort(key=lambda s: s.lower())
+        self.config_window.options_num = len(all_config_options)
+        self.config_window.config_options_bar = Scrollbar(self.config_window)
+        self.config_window.config_options_bar.place(x=235,
+                                                    y=120,
+                                                    height=170,
+                                                    anchor=CENTER)
+        self.config_window.choose_config_options = Listbox(
+            self.config_window,
+            yscrollcommand=self.config_window.config_options_bar.set)
+        for k in config_dict:
+            self.config_window.choose_config_options.insert(END, k)
+        self.config_window.choose_config_options.place(x=0, y=30, width=220)
+        self.config_window.config_options_bar.config(
+            command=self.config_window.choose_config_options.yview)
+        self.config_window.config_name = ttk.Label(self.config_window, text='')
+        self.config_window.config_name.place(x=300, y=20)
+        self.config_window.choose_config_options.bind(
+            '<<ListboxSelect>>', self.show_current_config_options)
+        self.config_contents = Text(self.config_window,
+                                    undo=True,
+                                    autoseparators=True,
+                                    maxundo=-1)
+        self.config_contents.bind('<KeyRelease>', self.config_change)
+        self.config_contents.place(x=350, y=50, width=400, height=200)
+        self.config_window.choose_filename_button = ttk.Button(
+            self.config_window,
+            text='选择文件名',
+            command=self.choose_filename,
+            width=20)
+        self.config_window.choose_directory_button = ttk.Button(
+            self.config_window,
+            text='选择路径',
+            command=self.choose_directory,
+            width=20)
+        self.config_window.choose_filename_button.place(x=0, y=250)
+        self.config_window.choose_directory_button.place(x=0, y=290)
+        self.config_window.search_text = ttk.Label(self.config_window,
+                                                   text='搜索设置参数')
+        self.config_window.search_text.place(x=30, y=370)
+        self.config_search_contents = StringVar()
+        self.config_search_contents.trace_add('write', self.search_config)
+        self.config_window.search_entry = Entry(
+            self.config_window, textvariable=self.config_search_contents)
+        self.config_window.search_entry.place(x=170, y=370)
+        self.config_window.search_inds = 0
+        self.config_window.up_button = ttk.Button(
+            self.config_window,
+            text='上一个',
+            command=lambda: self.change_search_inds(-1),
+            width=8)
+        self.config_window.down_button = ttk.Button(
+            self.config_window,
+            text='下一个',
+            command=lambda: self.change_search_inds(1),
+            width=8)
+        self.config_window.up_button.place(x=170, y=400)
+        self.config_window.down_button.place(x=250, y=400)
+        self.config_window.search_inds_list = []
+        self.config_window.value_dict = config_dict
+        self.config_window.choose_bool1 = ttk.Button(
+            self.config_window,
+            text='True',
+            command=lambda: self.insert_bool('True'))
+        self.config_window.choose_bool2 = ttk.Button(
+            self.config_window,
+            text='False',
+            command=lambda: self.insert_bool('False'))
+        self.config_window.choose_bool1.place(x=150, y=270)
+        self.config_window.choose_bool2.place(x=250, y=270)
         save_button = ttk.Button(self.config_window,
                                  text='保存',
                                  command=self.save_config)
-        save_button.place(x=600, y=420)
+        save_button.place(x=30, y=330)
         self.saved_label = ttk.Label(self.config_window, text='保存成功')
         self.choose_font = ttk.Button(self.config_window,
                                       text='选择字体',
                                       command=self.get_font)
-        self.choose_font.place(x=230, y=430)
+        self.choose_font.place(x=230, y=460)
         self.whole_fonts = list(font.families())
         self.whole_fonts.sort(
             key=lambda x: x if not x.startswith('@') else x[1:])
         self.font_list_bar = ttk.Scrollbar(self.config_window)
-        self.font_list_bar.place(x=190, y=490, height=170, anchor=CENTER)
+        self.font_list_bar.place(x=190, y=520, height=170, anchor=CENTER)
         self.font_list = Listbox(self.config_window,
                                  yscrollcommand=self.font_list_bar.set,
                                  width=25)
         for k in self.whole_fonts:
             self.font_list.insert(END, k)
-        self.font_list.place(x=0, y=400)
+        self.font_list.place(x=0, y=430)
         self.font_list_bar.config(command=self.font_list.yview)
         current_font_ind = self.whole_fonts.index(self.font_type)
         self.font_list.selection_set(current_font_ind)
         self.font_list.see(current_font_ind)
+        self.change_sort_button = ttk.Button(
+            self.config_window,
+            text="sort in order of appearance",
+            command=self.change_sort)
+        self.sort_mode = 1
+        self.change_sort_button.place(x=150, y=330, width=180)
+
+    def change_sort(self):
+        global all_config_options
+        if self.sort_mode == 0:
+            self.sort_mode = 1
+            self.change_sort_button.config(text='sort in order of appearance')
+            all_config_options = config_original.copy()
+            self.config_window.choose_config_options.delete(0, END)
+            for k in all_config_options:
+                self.config_window.choose_config_options.insert(END, k)
+        else:
+            self.sort_mode = 0
+            self.change_sort_button.config(text='sort in alphabetical order')
+            all_config_options = alpha_config.copy()
+            self.config_window.choose_config_options.delete(0, END)
+            for k in all_config_options:
+                self.config_window.choose_config_options.insert(END, k)
+        self.search_config()
 
     def get_font(self):
         self.font_type = self.font_list.get(ACTIVE)
-        self.font_size = eval(self.get_config_dict['font_size'].get())
+        self.font_size = eval(self.get_config_dict['font_size'])
         self.inputs.configure(font=(self.font_type, self.font_size))
         self.outputs.configure(font=(self.font_type, self.font_size))
-        self.get_config_dict['font_type'].delete(0, END)
-        self.get_config_dict['font_type'].insert(END, self.font_type)
+        self.get_config_dict['font_type'] = str(self.font_type)
         config_dict['font_type'] = self.font_type
         config_dict['font_size'] = self.font_size
         self.save_config(True)
@@ -365,17 +592,19 @@ class Root(Tk):
     def save_config(self, outer=False):
         if not outer:
             for each in config_dict:
-                if not isinstance(config_dict[each], str):
-                    config_dict[each] = eval(self.get_config_dict[each].get())
-                else:
-                    config_dict[each] = self.get_config_dict[each].get()
+                original = config_dict[each]
+                changed = self.get_config_dict[each]
+                if str(original) != changed:
+                    if not isinstance(original, str):
+                        config_dict[each] = eval(changed)
+                    else:
+                        config_dict[each] = changed
         with open('config.py', 'w', encoding='utf-8-sig') as f:
-            f.write(
-                f'config_dict = {config_dict}\npath_enable_list = {path_enable_list}'
-            )
+            formated_config = FormatCode(f'config_dict = {config_dict}\n')[0]
+            f.write(formated_config)
         if not outer:
-            self.saved_label.place(x=600, y=450)
-            self.after(300, self.saved_label.place_forget)
+            self.saved_label.place(x=360, y=400)
+            self.after(600, self.saved_label.place_forget)
         self.reload_config()
 
     def search_path(self, obj):
@@ -385,7 +614,7 @@ class Root(Tk):
                                               filetype=(("所有文件", "*.*"), ))
         if filename:
             memory = filename[:filename.rindex('/') + 1]
-            with open('browse memory.txt', 'w') as f:
+            with open('browse memory.txt', 'w', encoding='utf-8-sig') as f:
                 f.write(memory)
             self.last_place = memory
             obj.delete(0, END)
@@ -399,11 +628,24 @@ class Root(Tk):
         for each in self.grammar_highlight:
             self.inputs.tag_configure(each, foreground=each)
         try:
-            self.font_size = eval(self.get_config_dict['font_size'].get())
+            self.font_size = eval(self.get_config_dict['font_size'])
             self.inputs.configure(font=(self.font_type, self.font_size))
             self.outputs.configure(font=(self.font_type, self.font_size))
         except:
             pass
+
+    def save_current_file(self, e=None):
+        current_text = self.inputs.get('1.0', 'end-1c')
+        if current_text != self.last_save:
+            if self.current_filename_path:
+                self.last_save = self.inputs.get('1.0', 'end-1c')
+                with open(self.current_filename_path,
+                          'w',
+                          encoding='utf-8-sig') as f:
+                    f.write(self.last_save)
+            else:
+                self.save()
+            self.title('作曲分析文件语言编辑器')
 
     def save(self, e=None):
         filename = filedialog.asksaveasfilename(initialdir=self.last_place,
@@ -411,12 +653,15 @@ class Root(Tk):
                                                 filetype=(("所有文件", "*.*"), ),
                                                 defaultextension=".txt")
         if filename:
+            self.current_filename_path = filename
             memory = filename[:filename.rindex('/') + 1]
-            with open('browse memory.txt', 'w') as f:
+            with open('browse memory.txt', 'w', encoding='utf-8-sig') as f:
                 f.write(memory)
             self.last_place = memory
+            current_text = self.inputs.get('1.0', 'end-1c')
             with open(filename, 'w', encoding='utf-8-sig') as f:
-                f.write(self.inputs.get('1.0', END))
+                f.write(current_text)
+            self.last_save = current_text
 
     def get_current_select(self, e):
         if self.show_select:
@@ -554,7 +799,7 @@ class Root(Tk):
         if self.is_grammar and self.inputs.edit_modified():
             self.after(100, self.grammar_highlight_func)
         self.outputs.delete('1.0', END)
-        text = self.inputs.get('1.0', END)
+        text = self.inputs.get('1.0', 'end-1c')
         print(whole_translate(text))
 
     def runs_2(self):
@@ -600,7 +845,7 @@ class Root(Tk):
                 self.runs_2()
         else:
             if self.inputs.edit_modified():
-                self.pre_input = self.inputs.get('1.0', END)[:-1]
+                self.pre_input = self.inputs.get('1.0', 'end-1c')
                 self.runs_2()
 
         self.after(100, self.realtime_run)
@@ -674,14 +919,14 @@ class Root(Tk):
                                  foreground=self.foreground_color)
         self.menubar.post(event.x_root, event.y_root)
 
-    def outputs_file(self):
+    def outputs_file(self, e=None):
         filename = filedialog.asksaveasfilename(initialdir=self.last_place,
                                                 title="保存生成的作曲分析内容",
                                                 filetype=(("所有文件", "*.*"), ),
                                                 defaultextension=".txt")
         if filename:
             memory = filename[:filename.rindex('/') + 1]
-            with open('browse memory.txt', 'w') as f:
+            with open('browse memory.txt', 'w', encoding='utf-8-sig') as f:
                 f.write(memory)
             self.last_place = memory
             with open(filename, 'w', encoding='utf-8-sig') as f:
