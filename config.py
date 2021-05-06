@@ -18,5 +18,8 @@
     'day_and_night_colors': ('white', 'gray8'),
     'button_background_color': 'light grey',
     'active_foreground_color': 'black',
-    'disabled_foreground_color': 'white'
+    'disabled_foreground_color': 'white',
+    'highlight_background': 'ivory2',
+    'highlight_color': 'ivory2',
+    'highlight_thickness': 2
 }
