@@ -55,6 +55,23 @@ def grammar_translate(current):
     if show_bar == 'T':
         bar_num = bar_chords_split[0]
         current_chords = bar_chords_split[1:]
+        if len(bar_num) >= 3:
+            if bar_num[0] == '[' and bar_num[-1] == ']':
+                current_chords_len = len(current_chords)
+                if bar_num[-2] == '*':
+                    bar_num_list = [
+                        bar_num[1:-2] for i in range(current_chords_len)
+                    ]
+                else:
+                    bar_num_list = bar_num[1:-1].split(',')
+                    if len(bar_num_list) != current_chords_len:
+                        return
+                return '\n\n'.join([
+                    grammar_translate('$'.join([
+                        f"{bar_num_list[k]};{';'.join(['!'+current_chords[i] if i == k else current_chords[i] for i in range(current_chords_len)])}"
+                    ] + parts[1:])) for k in range(current_chords_len)
+                ])
+
         result += f'{bar_num}\n'
     else:
         current_chords = bar_chords_split
@@ -103,7 +120,7 @@ def grammar_translate(current):
                     bar_line_character
                 ]
                 if current_play and current_play_num != 0:
-                    chord_inds[current_play_num - 1] += 2
+                    chord_inds[current_play_num - 1] += len(arrow_character)
             else:
                 try:
                     inds = chord_inds[current_ind - 1]
