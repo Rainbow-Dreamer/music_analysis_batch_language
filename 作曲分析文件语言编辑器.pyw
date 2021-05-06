@@ -243,8 +243,6 @@ class Root(Tk):
         self.inputs.bind('<Control-g>',
                          lambda e: self.change_background_color_mode(True))
         self.inputs.bind('<Control-b>', lambda e: self.config_options())
-        self.inputs.bind('<Control-y>', lambda e: self.redo_special())
-        self.inputs.bind('<Control-z>', lambda e: self.undo_special())
         self.inputs.bind('<Control-MouseWheel>',
                          lambda e: self.change_font_size(e))
 
@@ -358,11 +356,6 @@ class Root(Tk):
                     self.inputs.insert(END, f.read())
                     self.inputs.see(INSERT)
                     self.last_save = self.inputs.get('1.0', 'end-1c')
-                    self.inputs.mark_set(INSERT, '1.0')
-                    if self.is_grammar:
-                        self.grammar_highlight_func()
-                    self.inputs.mark_set(INSERT, END)
-                    self.inputs.edit_modified(True)
             except:
                 self.inputs.delete('1.0', END)
                 self.inputs.insert(END, '不是有效的文本文件类型')
@@ -836,32 +829,13 @@ class Root(Tk):
         except:
             pass
 
-    def redo_special(self, e=None):
-        current_ind = self.inputs.index(INSERT).split('.')[0]
-        try:
-            self.inputs.edit_redo()
-            self.grammar_highlight_func(current_ind)
-        except:
-            pass
-
-    def undo_special(self, e=None):
-        current_ind = self.inputs.index(INSERT).split('.')[0]
-        try:
-            self.inputs.edit_undo()
-            self.grammar_highlight_func(current_ind)
-        except:
-            pass
-
-    def grammar_highlight_func(self, start_ind=None):
+    def grammar_highlight_func(self):
         end_index = self.inputs.index(END)
-        if start_ind is None:
-            start_x = self.inputs.index(INSERT).split('.')[0]
-        else:
-            start_x = start_ind
+        start_x = self.inputs.index(INSERT).split('.')[0]
         for color, texts in self.grammar_highlight.items():
             self.inputs.tag_remove(color, f'{start_x}.0', END)
             for i in texts:
-                start_index = f"{start_x}.0"
+                start_index = '1.0'
                 current_last_index = '1.0'
                 while self.inputs.compare(start_index, '<', end_index):
                     current_text_index = self.inputs.search(i,
