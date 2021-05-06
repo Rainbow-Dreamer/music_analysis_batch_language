@@ -62,11 +62,14 @@ class Root(Tk):
                         focusthickness=3,
                         focuscolor='none')
         style.map('TButton',
-                  background=[('active', self.active_background_color)])
+                  background=[('active', self.active_background_color)],
+                  foreground=[('active', self.active_foreground_color)])
         style.map('TCheckbutton',
-                  background=[('active', self.active_background_color)])
+                  background=[('active', self.active_background_color)],
+                  foreground=[('active', self.active_foreground_color)])
         style.map('New.TButton',
-                  background=[('active', self.active_background_color)])
+                  background=[('active', self.active_background_color)],
+                  foreground=[('active', self.active_foreground_color)])
         self.get_config_dict = copy(config_dict)
         self.get_config_dict = {
             i: str(j)
@@ -240,6 +243,8 @@ class Root(Tk):
         self.inputs.bind('<Control-g>',
                          lambda e: self.change_background_color_mode(True))
         self.inputs.bind('<Control-b>', lambda e: self.config_options())
+        self.inputs.bind('<Control-y>', lambda e: self.redo_special())
+        self.inputs.bind('<Control-z>', lambda e: self.undo_special())
         self.inputs.bind('<Control-MouseWheel>',
                          lambda e: self.change_font_size(e))
 
@@ -352,10 +357,12 @@ class Root(Tk):
                     self.inputs.delete('1.0', END)
                     self.inputs.insert(END, f.read())
                     self.inputs.see(INSERT)
-                    self.inputs.mark_set(INSERT, '1.0')
                     self.last_save = self.inputs.get('1.0', 'end-1c')
+                    self.inputs.mark_set(INSERT, '1.0')
                     if self.is_grammar:
-                        self.after(100, self.grammar_highlight_func)
+                        self.grammar_highlight_func()
+                    self.inputs.mark_set(INSERT, END)
+                    self.inputs.edit_modified(True)
             except:
                 self.inputs.delete('1.0', END)
                 self.inputs.insert(END, '不是有效的文本文件类型')
@@ -429,21 +436,23 @@ class Root(Tk):
         self.config_contents.insert(END, current_config_value)
 
     def choose_filename(self):
-        filename = filedialog.askopenfilename(initialdir='.',
+        filename = filedialog.askopenfilename(parent=self.config_window,
+                                              initialdir='.',
                                               title="choose filename",
                                               filetype=(("all files",
                                                          "*.*"), ))
         self.config_contents.delete('1.0', END)
-        self.config_contents.insert(END, f"'{filename}'")
+        self.config_contents.insert(END, filename)
         self.config_change(0)
 
     def choose_directory(self):
         directory = filedialog.askdirectory(
+            parent=self.config_window,
             initialdir='.',
             title="choose directory",
         )
         self.config_contents.delete('1.0', END)
-        self.config_contents.insert(END, f"'{directory}'")
+        self.config_contents.insert(END, directory)
         self.config_change(0)
 
     def config_options(self):
@@ -813,19 +822,46 @@ class Root(Tk):
             self.after(100, self.grammar_highlight_func)
         self.outputs.delete('1.0', END)
         text = self.inputs.get('1.0', 'end-1c')
-        print(whole_translate(text))
+        try:
+            print(whole_translate(text))
+        except:
+            pass
 
     def runs_2(self):
         self.inputs.edit_modified(False)
         self.outputs.delete('1.0', END)
         text = self.pre_input
-        print(whole_translate(text))
+        try:
+            print(whole_translate(text))
+        except:
+            pass
 
-    def grammar_highlight_func(self):
+    def redo_special(self, e=None):
+        current_ind = self.inputs.index(INSERT).split('.')[0]
+        try:
+            self.inputs.edit_redo()
+            self.grammar_highlight_func(current_ind)
+        except:
+            pass
+
+    def undo_special(self, e=None):
+        current_ind = self.inputs.index(INSERT).split('.')[0]
+        try:
+            self.inputs.edit_undo()
+            self.grammar_highlight_func(current_ind)
+        except:
+            pass
+
+    def grammar_highlight_func(self, start_ind=None):
         end_index = self.inputs.index(END)
+        if start_ind is None:
+            start_x = self.inputs.index(INSERT).split('.')[0]
+        else:
+            start_x = start_ind
         for color, texts in self.grammar_highlight.items():
+            self.inputs.tag_remove(color, f'{start_x}.0', END)
             for i in texts:
-                start_index = f"{self.inputs.index(INSERT).split('.')[0]}.0"
+                start_index = f"{start_x}.0"
                 current_last_index = '1.0'
                 while self.inputs.compare(start_index, '<', end_index):
                     current_text_index = self.inputs.search(i,
@@ -835,23 +871,28 @@ class Root(Tk):
                         word_length = len(i)
                         x, y = current_text_index.split('.')
                         current_last_index = f"{x}.{int(y)+word_length}"
-                        self.inputs.tag_add(color, current_text_index,
-                                            current_last_index)
+                        next_index_end = f"{x}.{int(y)+2*word_length}"
+                        last_index_start = f"{x}.{int(y)-word_length}"
+                        if self.inputs.get(
+                                current_last_index,
+                                next_index_end) != i and self.inputs.get(
+                                    last_index_start, current_text_index) != i:
+                            self.inputs.tag_add(color, current_text_index,
+                                                current_last_index)
                         start_index = current_last_index
                     else:
-                        x, y = current_last_index.split('.')
-                        if self.inputs.get(current_last_index) == '\n':
+                        x, y = start_index.split('.')
+                        if self.inputs.get(start_index) == '\n':
                             x = int(x) + 1
                         y = int(y) + 1
-                        current_last_index = f'{x}.{y}'
-                        start_index = current_last_index
+                        start_index = f'{x}.{y}'
 
     def realtime_run(self):
         if self.quit or (not self.is_realtime):
             self.quit = False
             return
         if self.is_grammar and self.inputs.edit_modified():
-            self.after(100, self.grammar_highlight_func)
+            self.grammar_highlight_func()
         if self.is_auto:
             if self.changed:
                 self.changed = False
