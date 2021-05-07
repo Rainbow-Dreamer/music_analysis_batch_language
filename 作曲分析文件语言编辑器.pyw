@@ -958,7 +958,7 @@ class Root(Tk):
                 f.write(memory)
             self.last_place = memory
             with open(filename, 'w', encoding='utf-8-sig') as f:
-                f.write(self.outputs.get('1.0', END))
+                f.write(self.outputs.get('1.0', 'end-1c'))
 
 
 root = Root()
