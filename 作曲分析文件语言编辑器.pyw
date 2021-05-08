@@ -114,8 +114,8 @@ class Root(Tk):
                                   command=self.outputs.xview)
         self.outputs.configure(yscrollcommand=outputs_v.set,
                                xscrollcommand=outputs_h.set)
-        outputs_v.place(x=1200, y=60, height=500)
-        outputs_h.place(x=600, y=560, width=600)
+        outputs_v.place(x=1214, y=60, height=500)
+        outputs_h.place(x=614, y=560, width=600)
         self.run_button = ttk.Button(self, text='运行', command=self.runs)
         self.run_button.place(x=160, y=0)
         self.realtime = IntVar()
