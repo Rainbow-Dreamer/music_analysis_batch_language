@@ -8,15 +8,15 @@ You can specify which chord is currently being played. You can also set your own
 You can also set the character of the bar line, etc. Next I will explain the basic syntax of the language.  
 First, the syntax for inputting the tonicity is
 ```
-k.Tone
+k.key
 ```
-The tonality can be anything you want to write, such as A major, A major, etc., and the above syntax will be generated
+The key can be anything you want to write, such as A major, A major, etc., and the above syntax will be generated
 ```
-key: tonality
+key: key
 ```
 In addition, you can also customize the beginning of the tonic with the syntax
 ```
-k!The beginning of the tonality
+k!The beginning of the key
 ```
 This allows you to customize the content before the tonic, which defaults to ``key: ``
 
@@ -121,7 +121,7 @@ key: A major
 ```
 which sets the current tonic preceding the
 ```
-k!current tonality: 
+k!current key: 
 ```
 and then write
 ```
