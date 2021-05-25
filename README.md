@@ -1,5 +1,169 @@
 # music_analysis_batch_language
 
+[中文](#music_analysis_batch_language中文版介绍) English
+
+This is a language that I designed to allow you to quickly enter compositional analyses of key, chords, chord progressions, explanations of compositional techniques, etc.  
+The chord progressions (usually roman numerals) are automatically aligned with the corresponding chords.  
+You can specify which chord is currently being played. You can also set your own spacing (number of spaces) between adjacent chords.  
+You can also set the character of the bar line, etc. Next I will explain the basic syntax of the language.  
+First, the syntax for inputting the tonicity is
+```
+k.Tone
+```
+The tonality can be anything you want to write, such as A major, A major, etc., and the above syntax will be generated
+```
+key: tonality
+```
+In addition, you can also customize the beginning of the tonic with the syntax
+```
+k!The beginning of the tonality
+```
+This allows you to customize the content before the tonic, which defaults to ``key: ``
+
+Then you can enter the chord progression and the corresponding chord progressions (usually roman numerals) for the composition analysis, with the syntax  
+```
+current bar number; chord 1; chord 2; chord 3; ... $ chord steps 1; chord steps 2; chord steps 3;... $ Other parameter customization
+```
+First, the first argument is the number of bars, which can be any number, integer, decimal, fraction (actually it can be any string)  
+Then use `;` to separate it from the chord part, then every two chords are also separated by `;`, you can write as many as you want, and then use `$` as the ending  
+After that you can write the content of the chord progression, again separated by `;` and then also ending with `$`, followed by other parameter configurations.  
+If you want to display the chord you are currently playing, the syntax is to add `! `.  
+For example, if you want to display the currently playing chord 2, then you can write
+```
+Current bar number; chord 1; ! chord2;chord3;... $ chord step 1; chord step 2; chord step 3;... $ other parameter customization
+```
+It's worth mentioning here that my language is designed in such a way that the last chord name with `! ` in front of the chord name as a display of the chord currently being played.  
+So you can prefix multiple chords with `! `, you just need to make sure that the last `! ` is in front of the chord you want to display at the moment.
+
+
+Possible parameter configurations.  
+* c=textual description of the composition (you can add a textual description of the composition analysis of the chord of the current bar)
+
+* i=spacing (you can set the number of spaces between each chord)
+
+* b=whether to display the current bar number (if T, the current bar number is displayed (the first argument is displayed as the current bar number), if F, the current bar number is not displayed (the first argument is displayed as the first chord))
+
+* s=bar line character (you can set the bar line character, the default is `|`)
+
+* a=character of the chord currently being played (you can set the character of the chord currently being played, the default is `→`)
+
+* ca=whether to show chord steps (if T, then show chord steps, if F, then don't show chord steps)
+
+Next I'll demonstrate how this works.
+```
+1;Cmaj7;Dm11;G9sus;Cmaj9#11$IM7;ii11;V9sus;IM9#11
+```
+It is possible to generate
+```
+1
+Cmaj7 | Dm11 | G9sus | Cmaj9#11
+IM7     ii11   V9sus   IM9#11
+```
+Each chord and chord step is automatically aligned, saving you the trouble of laying out the chords yourself.  
+If it is to show the chord currently being played, then you can write
+```
+1;Cmaj7;!D7;Fmaj7;Cmaj9(omit 3)$IM7;II7;IVM7;IM9
+```
+can generate
+```
+1
+Cmaj7 | → D7 | Fmaj7 | Cmaj9(omit 3)
+IM7       II7  IVM7    IM9
+```
+And there are various parameter configurations to customize the generated content yourself, for example, if you want to add a composition note, you can write
+```
+1;Cmaj7;!D7;Fmaj7;Cmaj9(omit 3)$IM7;II7;IVM7;IM9$c=2nd genus seventh chord in C major borrowed from the same dominant C lydian mode
+```
+can be generated
+```
+1
+Cmaj7 | → D7 | Fmaj7 | Cmaj9(omit 3)
+IM7       II7  IVM7    IM9
+The 2nd genus 7th chord in C major, borrowed from the same dominant C lydian mode
+````
+If you want to enter a composition note with multiple lines, just type a line break `\n` at the time of the line break.  
+If you do not want to display the content of the chord progressions of the compositional analysis, you can simply leave them out, the
+```
+1;Cmaj7;!D7;Fmaj7;Cmaj9(omit 3)
+```
+can be generated
+```
+1
+Cmaj7 | → D7 | Fmaj7 | Cmaj9(omit 3)
+```
+If you don't want to display the content of the chord steps of the composition analysis, but you need to configure the parameters, for example, you don't want to display the number of current bars.  
+then you can write `. ` or `~` or just leave it blank.
+```
+Cmaj7;!D7;Fmaj7;Cmaj9(omit 3)$$b=F
+```
+can generate
+```
+Cmaj7 | → D7 | Fmaj7 | Cmaj9(omit 3)
+```
+Next I demonstrate the effect of some parameter configurations, such as changing the interval that
+```
+1;Cmaj7;!D7;Fmaj7;Cmaj9(omit 3)$IM7;II7;IVM7;IM9$i=2
+```
+can generate
+```
+1
+Cmaj7 | → D7 | Fmaj7 | Cmaj9(omit 3)
+IM7       II7  IVM7    IM9
+```
+The number of spaces to the bar line between each two chords is now 2.  
+Showing the current tonicity of
+```
+k.A major
+```
+can be generated
+```
+key: A major
+```
+which sets the current tonic preceding the
+```
+k!current tonality: 
+```
+and then write
+```
+k.A major
+```
+can be generated
+```
+Current key: A major
+```
+Any number of lines can be left blank between the analysis of each composition in two different bars, and the result is generated with as many lines empty, e.g.
+```
+1;!Cmaj7;D7;Fmaj7;Cmaj9(omit 3)$IM7;II7;IVM7;IM9
+
+2;Cmaj7;!D7;Fmaj7;Cmaj9(omit 3)$IM7;II7;IVM7;IM9
+```
+can generate
+```
+1
+→ Cmaj7 | D7 | Fmaj7 | Cmaj9(omit 3)
+  IM7     II7  IVM7    IM9
+
+2
+Cmaj7 | → D7 | Fmaj7 | Cmaj9(omit 3)
+IM7       II7  IVM7    IM9
+```
+In addition, the current bar count can actually be written `+ the distance relative to the previous bar `, and the unit of this distance is also bars.  
+For example, if the first current bar is 1, and then 1/2 bar later the next chord is played, then you can write `+1/2`.  
+This syntax is actually directly parsable in the piano software I wrote, Ideal Piano, and I wrote the syntax parsing function logic specifically  
+Ideal Piano supports both absolute and relative bar counts, and can directly read the above  
+It is possible to read the composition analysis as generated above and display the composition analysis by bar in real time while playing the midi file in the software.
+
+Batch syntax generation for a few chords:  
+`[n*];chord name 1; chord name 2; chord name 3;... $ chord function 1; chord function 2; chord function 3;... `  
+`[n1,n2,n3,...] ;chord name1;chord name2;chord name3;... $ chord function 1;chord function 2;chord function 3;... `  
+The n\* in the brackets here sets all the bars of the current line to n. n can be both absolute and relative bars, and relative bars are usually used more often. You can also write n1,n2,n3 in parentheses to set the number of bars for each chord in the current line in turn.
+
+I have written an editor specifically for this language, which writes code on the left and generates the corresponding composition content in real time on the right, as well as syntax highlighting and other functions.
+
+# music_analysis_batch_language中文版介绍
+
+中文 [English](#music_analysis_batch_language)
+
 这是我设计的一门可以快速输入作曲分析内容的语言，可以对你输入的调性，和弦，和弦级数以及作曲手法的讲解等等  
 进行批量排版，让你用很简洁的语法输入漂亮的作曲分析，和弦级数(一般为roman numerals)会自动与对应的和弦  
 进行对齐，并且可以指定当前正在演奏的是哪一个和弦。也可以自己设定相邻和弦之间的间隔（空格的数量），  
