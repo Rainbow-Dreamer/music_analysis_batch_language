@@ -72,21 +72,21 @@ IM7       II7  IVM7    IM9
 ```
 And there are various parameter configurations to customize the generated content yourself, for example, if you want to add a composition note, you can write
 ```
-1;Cmaj7;!D7;Fmaj7;Cmaj9(omit 3)$IM7;II7;IVM7;IM9$c=2nd genus seventh chord in C major borrowed from the same dominant C lydian mode
+1;Cmaj7;!D7;Fmaj7;Cmaj9(omit 3)$IM7;II7;IVM7;IM9$c=2nd dominant seventh chord in C major borrowed from the parallel C lydian mode
 ```
-can be generated
+can generate
 ```
 1
 Cmaj7 | → D7 | Fmaj7 | Cmaj9(omit 3)
 IM7       II7  IVM7    IM9
-The 2nd genus 7th chord in C major, borrowed from the same dominant C lydian mode
+2nd dominant seventh chord in C major borrowed from the parallel C lydian mode
 ````
 If you want to enter a composition note with multiple lines, just type a line break `\n` at the time of the line break.  
 If you do not want to display the content of the chord progressions of the compositional analysis, you can simply leave them out, the
 ```
 1;Cmaj7;!D7;Fmaj7;Cmaj9(omit 3)
 ```
-can be generated
+can generate
 ```
 1
 Cmaj7 | → D7 | Fmaj7 | Cmaj9(omit 3)
@@ -115,7 +115,7 @@ Showing the current tonicity of
 ```
 k.A major
 ```
-can be generated
+can generate
 ```
 key: A major
 ```
@@ -127,7 +127,7 @@ and then write
 ```
 k.A major
 ```
-can be generated
+can generate
 ```
 Current key: A major
 ```
