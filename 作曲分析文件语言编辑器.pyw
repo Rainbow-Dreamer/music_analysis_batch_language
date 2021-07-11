@@ -342,7 +342,7 @@ class Root(Tk):
     def openfile(self, e=None):
         filename = filedialog.askopenfilename(initialdir=self.last_place,
                                               title="选择文件",
-                                              filetype=(("所有文件", "*.*"), ))
+                                              filetypes=(("所有文件", "*.*"), ))
         if filename:
             self.current_filename_path = filename
             memory = filename[:filename.rindex('/') + 1]
@@ -432,8 +432,8 @@ class Root(Tk):
         filename = filedialog.askopenfilename(parent=self.config_window,
                                               initialdir='.',
                                               title="choose filename",
-                                              filetype=(("all files",
-                                                         "*.*"), ))
+                                              filetypes=(("all files",
+                                                          "*.*"), ))
         self.config_contents.delete('1.0', END)
         self.config_contents.insert(END, filename)
         self.config_change(0)
@@ -626,7 +626,7 @@ class Root(Tk):
         filename = filedialog.askopenfilename(initialdir=self.last_place,
                                               parent=self.config_window,
                                               title="选择文件",
-                                              filetype=(("所有文件", "*.*"), ))
+                                              filetypes=(("所有文件", "*.*"), ))
         if filename:
             memory = filename[:filename.rindex('/') + 1]
             with open('browse memory.txt', 'w', encoding='utf-8-sig') as f:
@@ -665,7 +665,7 @@ class Root(Tk):
     def save(self, e=None):
         filename = filedialog.asksaveasfilename(initialdir=self.last_place,
                                                 title="保存输入文本",
-                                                filetype=(("所有文件", "*.*"), ),
+                                                filetypes=(("所有文件", "*.*"), ),
                                                 defaultextension=".txt")
         if filename:
             self.current_filename_path = filename
@@ -950,7 +950,7 @@ class Root(Tk):
     def outputs_file(self, e=None):
         filename = filedialog.asksaveasfilename(initialdir=self.last_place,
                                                 title="保存生成的作曲分析内容",
-                                                filetype=(("所有文件", "*.*"), ),
+                                                filetypes=(("所有文件", "*.*"), ),
                                                 defaultextension=".txt")
         if filename:
             memory = filename[:filename.rindex('/') + 1]
