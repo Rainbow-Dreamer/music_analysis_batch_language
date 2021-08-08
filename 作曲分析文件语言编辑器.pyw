@@ -5,6 +5,8 @@ from tkinter import font
 from tkinter.scrolledtext import ScrolledText
 import PIL.Image, PIL.ImageTk
 from tkinter import filedialog
+import os, sys
+import re
 from yapf.yapflib.yapf_api import FormatCode
 from copy import deepcopy as copy
 
@@ -30,6 +32,7 @@ class Root(Tk):
         self.foreground_color = config_dict['foreground_color']
         self.active_background_color = config_dict['active_background_color']
         self.day_color, self.night_color = config_dict['day_and_night_colors']
+        self.search_highlight_color = config_dict['search_highlight_color']
         self.button_background_color = config_dict['button_background_color']
         self.active_foreground_color = config_dict['active_foreground_color']
         self.disabled_foreground_color = config_dict[
@@ -40,14 +43,12 @@ class Root(Tk):
         style.configure('TButton',
                         background=self.background_color,
                         foreground=self.foreground_color,
-                        width=10,
                         borderwidth=0,
                         focusthickness=3,
                         focuscolor='none')
         style.configure('TCheckbutton',
                         background=self.background_color,
                         foreground=self.foreground_color,
-                        width=12,
                         borderwidth=0,
                         focusthickness=3,
                         focuscolor='none')
@@ -57,7 +58,6 @@ class Root(Tk):
         style.configure('New.TButton',
                         background=self.button_background_color,
                         foreground=self.foreground_color,
-                        width=10,
                         borderwidth=0,
                         focusthickness=3,
                         focuscolor='none')
@@ -75,6 +75,18 @@ class Root(Tk):
             i: str(j)
             for i, j in self.get_config_dict.items()
         }
+        try:
+            self.bg = PIL.Image.open(config_dict['background_image'])
+            ratio = 600 / self.bg.height
+            self.bg = self.bg.resize(
+                (int(self.bg.width * ratio), int(self.bg.height * ratio)),
+                PIL.Image.ANTIALIAS)
+            self.bg = PIL.ImageTk.PhotoImage(self.bg)
+            self.bg_label = ttk.Label(self, image=self.bg)
+            bg_places = config_dict['background_places']
+            self.bg_label.place(x=bg_places[0], y=bg_places[1])
+        except:
+            pass
         self.inputs_text = ttk.Label(self,
                                      text='请在这里输入作曲分析文件语言',
                                      background=self.background_color)
@@ -127,8 +139,8 @@ class Root(Tk):
         self.is_realtime = 1
         self.quit = False
         self.auto = IntVar()
-        self.auto.set(1)
-        self.is_auto = 1
+        self.auto.set(0)
+        self.is_auto = 0
         self.auto_box = ttk.Checkbutton(self,
                                         text='自动补全',
                                         variable=self.auto,
@@ -146,7 +158,7 @@ class Root(Tk):
         self.wraplines_button = ttk.Button(self,
                                            text='自动换行',
                                            command=self.wraplines)
-        self.realtime_box.place(x=400, y=0)
+        self.realtime_box.place(x=410, y=0)
         self.auto_box.place(x=500, y=0)
         self.grammar_box.place(x=600, y=0)
         self.wraplines_button.place(x=700, y=0)
@@ -165,15 +177,15 @@ class Root(Tk):
         self.changed = False
         self.auto_complete_menu = Listbox(self)
         self.auto_complete_menu.bind("<<ListboxSelect>>",
-                                     lambda e: self.enter_choose(e))
+                                     lambda e: self.enter_choose())
         self.update()
         self.select_ind = 0
         self.show_select = False
         self.bind('<Up>', lambda e: self.change_select(-1))
         self.bind('<Down>', lambda e: self.change_select(1))
-        self.bind('<Left>', self.close_select)
-        self.bind('<Right>', self.close_select)
-        self.bind('<Return>', lambda e: self.get_current_select(e))
+        self.bind('<Left>', lambda e: self.close_select())
+        self.bind('<Right>', lambda e: self.close_select())
+        self.bind('<Return>', lambda e: self.get_current_select())
         self.file_top = ttk.Button(self,
                                    text='文件',
                                    command=self.file_top_make_menu)
@@ -218,7 +230,7 @@ class Root(Tk):
             with open('browse memory.txt', encoding='utf-8-sig') as f:
                 self.last_place = f.read()
         except:
-            self.last_place = "/"
+            self.last_place = "."
         self.bg_mode = config_dict['background_mode']
         self.turn_bg_mode = ttk.Button(
             self,
@@ -234,15 +246,37 @@ class Root(Tk):
                             activebackground=self.active_background_color,
                             activeforeground=self.active_foreground_color,
                             disabledforeground=self.disabled_foreground_color)
-        self.inputs.bind("<Button-3>", lambda x: self.rightKey(x, self.inputs))
-        self.inputs.bind('<Control-w>', self.openfile)
-        self.inputs.bind('<Control-s>', self.save_current_file)
-        self.inputs.bind('<Control-d>', self.outputs_file)
-        self.inputs.bind('<Control-q>', lambda e: self.close_window())
-        self.inputs.bind('<Control-r>', lambda e: self.runs())
-        self.inputs.bind('<Control-g>',
-                         lambda e: self.change_background_color_mode(True))
-        self.inputs.bind('<Control-b>', lambda e: self.config_options())
+        self.menubar.add_command(label='剪切',
+                                 command=self.cut,
+                                 foreground=self.foreground_color)
+        self.menubar.add_command(label='复制',
+                                 command=self.copy,
+                                 foreground=self.foreground_color)
+        self.menubar.add_command(label='粘贴',
+                                 command=self.paste,
+                                 foreground=self.foreground_color)
+        self.menubar.add_command(label='全选',
+                                 command=self.choose_all,
+                                 foreground=self.foreground_color)
+        self.menubar.add_command(label='撤销',
+                                 command=self.inputs_undo,
+                                 foreground=self.foreground_color)
+        self.menubar.add_command(label='恢复',
+                                 command=self.inputs_redo,
+                                 foreground=self.foreground_color)
+        self.menubar.add_command(label='搜索',
+                                 command=self.search_words,
+                                 foreground=self.foreground_color)
+        self.inputs.bind("<Button-1>", lambda e: self.close_select())
+        self.inputs.bind("<Button-3>", lambda e: self.rightKey(e))
+        self.bind('<Control-f>', lambda e: self.search_words())
+        self.bind('<Control-w>', lambda e: self.openfile())
+        self.bind('<Control-s>', lambda e: self.save_current_file())
+        self.bind('<Control-q>', lambda e: self.close_window())
+        self.bind('<Control-r>', lambda e: self.runs())
+        self.bind('<Control-g>',
+                  lambda e: self.change_background_color_mode(True))
+        self.bind('<Control-b>', lambda e: self.config_options())
         self.inputs.bind('<Control-MouseWheel>',
                          lambda e: self.change_font_size(e))
 
@@ -259,7 +293,7 @@ class Root(Tk):
             self.title('作曲分析文件语言编辑器')
         self.after(100, self.check_if_edited)
 
-    def close_window(self, e=None):
+    def close_window(self):
         current_text = self.inputs.get('1.0', 'end-1c')
         if current_text != self.last_save:
             self.ask_save_window = Toplevel(
@@ -285,7 +319,7 @@ class Root(Tk):
             self.ask_save_window.not_save_button = ttk.Button(
                 self.ask_save_window,
                 text='丢弃',
-                command=self.destroy,
+                command=self.destroy_and_quit,
                 style='New.TButton')
             self.ask_save_window.cancel_button = ttk.Button(
                 self.ask_save_window,
@@ -297,11 +331,28 @@ class Root(Tk):
             self.ask_save_window.cancel_button.place(x=200, y=100)
         else:
             self.destroy()
+            self.save_config(True, False)
 
     def save_and_quit(self):
         self.save_current_file()
         if self.current_filename_path:
             self.destroy()
+            self.save_config(True, False)
+
+    def destroy_and_quit(self):
+        self.destroy()
+        self.save_config(True, False)
+
+    def get_current_line_column(self):
+        ind = self.inputs.index(INSERT)
+        line, column = ind.split('.')
+        self.current_line_number = int(line)
+        self.current_column_number = int(column)
+        self.line_column.config(
+            text=
+            f'Line {self.current_line_number} Col {self.current_column_number}'
+        )
+        self.after(10, self.get_current_line_column)
 
     def change_font_size(self, e):
         num = e.delta // 120
@@ -312,7 +363,6 @@ class Root(Tk):
         self.get_config_dict['font_size'] = str(self.font_size)
         self.inputs.configure(font=(self.font_type, self.font_size))
         self.outputs.configure(font=(self.font_type, self.font_size))
-        self.save_config(True)
 
     def change_background_color_mode(self, turn=True):
         if turn:
@@ -337,9 +387,8 @@ class Root(Tk):
             self.turn_bg_mode.configure(text='开灯')
         if turn:
             config_dict['background_mode'] = self.bg_mode
-            self.save_config(True)
 
-    def openfile(self, e=None):
+    def openfile(self):
         filename = filedialog.askopenfilename(initialdir=self.last_place,
                                               title="选择文件",
                                               filetypes=(("所有文件", "*.*"), ))
@@ -380,9 +429,9 @@ class Root(Tk):
     def insert_bool(self, content):
         self.config_contents.delete('1.0', END)
         self.config_contents.insert(END, content)
-        self.config_change(0)
+        self.config_change()
 
-    def config_change(self, e):
+    def config_change(self):
         current = self.config_contents.get('1.0', 'end-1c')
         current_config = self.config_window.choose_config_options.get(ANCHOR)
         self.get_config_dict[current_config] = current
@@ -401,7 +450,7 @@ class Root(Tk):
             self.config_window.choose_config_options.selection_set(first)
             self.config_window.choose_config_options.selection_anchor(first)
             self.config_window.choose_config_options.see(first)
-            self.show_current_config_options(0)
+            self.show_current_config_options()
 
     def search_config(self, *args):
         current = self.config_window.search_entry.get()
@@ -417,11 +466,11 @@ class Root(Tk):
             self.config_window.choose_config_options.selection_set(first)
             self.config_window.choose_config_options.selection_anchor(first)
             self.config_window.choose_config_options.see(first)
-            self.show_current_config_options(0)
+            self.show_current_config_options()
         else:
             self.config_window.choose_config_options.selection_clear(0, END)
 
-    def show_current_config_options(self, e):
+    def show_current_config_options(self):
         current_config = self.config_window.choose_config_options.get(ANCHOR)
         self.config_window.config_name.configure(text=current_config)
         self.config_contents.delete('1.0', END)
@@ -431,22 +480,21 @@ class Root(Tk):
     def choose_filename(self):
         filename = filedialog.askopenfilename(parent=self.config_window,
                                               initialdir='.',
-                                              title="choose filename",
-                                              filetypes=(("all files",
-                                                          "*.*"), ))
+                                              title="选择文件",
+                                              filetypes=(("所有文件", "*.*"), ))
         self.config_contents.delete('1.0', END)
         self.config_contents.insert(END, filename)
-        self.config_change(0)
+        self.config_change()
 
     def choose_directory(self):
         directory = filedialog.askdirectory(
             parent=self.config_window,
             initialdir='.',
-            title="choose directory",
+            title="选择文件夹",
         )
         self.config_contents.delete('1.0', END)
         self.config_contents.insert(END, directory)
-        self.config_change(0)
+        self.config_change()
 
     def config_options(self):
         if self.config_box_open:
@@ -493,12 +541,13 @@ class Root(Tk):
         self.config_window.config_name = ttk.Label(self.config_window, text='')
         self.config_window.config_name.place(x=300, y=20)
         self.config_window.choose_config_options.bind(
-            '<<ListboxSelect>>', self.show_current_config_options)
+            '<<ListboxSelect>>', lambda e: self.show_current_config_options())
         self.config_contents = Text(self.config_window,
                                     undo=True,
                                     autoseparators=True,
                                     maxundo=-1)
-        self.config_contents.bind('<KeyRelease>', self.config_change)
+        self.config_contents.bind('<KeyRelease>',
+                                  lambda e: self.config_change())
         self.config_contents.place(x=350, y=50, width=400, height=200)
         self.config_window.choose_filename_button = ttk.Button(
             self.config_window,
@@ -576,6 +625,16 @@ class Root(Tk):
         self.sort_mode = 1
         self.change_sort_button.place(x=150, y=330, width=180)
 
+        self.reload_button = ttk.Button(self.config_window,
+                                        text='重新加载',
+                                        command=self.reload)
+        self.reload_button.place(x=230, y=510)
+
+    def reload(self):
+        self.destroy()
+        self.save_config(True, False)
+        os.startfile(__file__)
+
     def change_sort(self):
         global all_config_options
         if self.sort_mode == 0:
@@ -602,9 +661,8 @@ class Root(Tk):
         self.get_config_dict['font_type'] = str(self.font_type)
         config_dict['font_type'] = self.font_type
         config_dict['font_size'] = self.font_size
-        self.save_config(True)
 
-    def save_config(self, outer=False):
+    def save_config(self, outer=False, reload=True):
         if not outer:
             for each in config_dict:
                 original = config_dict[each]
@@ -620,7 +678,8 @@ class Root(Tk):
         if not outer:
             self.saved_label.place(x=360, y=400)
             self.after(600, self.saved_label.place_forget)
-        self.reload_config()
+        if reload:
+            self.reload_config()
 
     def search_path(self, obj):
         filename = filedialog.askopenfilename(initialdir=self.last_place,
@@ -636,12 +695,42 @@ class Root(Tk):
             obj.insert(END, filename)
 
     def reload_config(self):
+        try:
+            bg_path = config_dict['background_image']
+            if not bg_path:
+                self.bg_label.configure(image='')
+            else:
+                self.bg = PIL.Image.open(bg_path)
+                ratio = 600 / self.bg.height
+                self.bg = self.bg.resize(
+                    (int(self.bg.width * ratio), int(self.bg.height * ratio)),
+                    PIL.Image.ANTIALIAS)
+                self.bg = PIL.ImageTk.PhotoImage(self.bg)
+                self.bg_label.configure(image=self.bg)
+                bg_places = config_dict['background_places']
+                self.bg_label.place(x=bg_places[0], y=bg_places[1])
+
+        except:
+            bg_path = config_dict['background_image']
+            if not bg_path:
+                self.bg = ''
+            else:
+                self.bg = PIL.Image.open(bg_path)
+                ratio = 600 / self.bg.height
+                self.bg = self.bg.resize(
+                    (int(self.bg.width * ratio), int(self.bg.height * ratio)),
+                    PIL.Image.ANTIALIAS)
+                self.bg = PIL.ImageTk.PhotoImage(self.bg)
+                self.bg_label = ttk.Label(self, image=self.bg)
+                bg_places = config_dict['background_places']
+                self.bg_label.place(x=bg_places[0], y=bg_places[1])
         self.eachline_character = config_dict['eachline_character']
         self.pairing_symbols = config_dict['pairing_symbols']
         self.wraplines_number = config_dict['wraplines_number']
         self.grammar_highlight = config_dict['grammar_highlight']
         for each in self.grammar_highlight:
             self.inputs.tag_configure(each, foreground=each)
+
         try:
             self.font_size = eval(self.get_config_dict['font_size'])
             self.inputs.configure(font=(self.font_type, self.font_size))
@@ -649,7 +738,7 @@ class Root(Tk):
         except:
             pass
 
-    def save_current_file(self, e=None):
+    def save_current_file(self):
         current_text = self.inputs.get('1.0', 'end-1c')
         if current_text != self.last_save:
             if self.current_filename_path:
@@ -662,11 +751,12 @@ class Root(Tk):
                 self.save()
             self.title('作曲分析文件语言编辑器')
 
-    def save(self, e=None):
+    def save(self):
         filename = filedialog.asksaveasfilename(initialdir=self.last_place,
                                                 title="保存输入文本",
                                                 filetypes=(("所有文件", "*.*"), ),
-                                                defaultextension=".txt")
+                                                defaultextension=".txt",
+                                                initialfile='Untitled.txt')
         if filename:
             self.current_filename_path = filename
             memory = filename[:filename.rindex('/') + 1]
@@ -678,7 +768,7 @@ class Root(Tk):
                 f.write(current_text)
             self.last_save = current_text
 
-    def get_current_select(self, e):
+    def get_current_select(self):
         if self.show_select:
             text = self.auto_complete_menu.get(self.select_ind)
             self.auto_complete_menu.destroy()
@@ -690,11 +780,12 @@ class Root(Tk):
             self.inputs.insert(END, self.pre_input)
             self.inputs.mark_set(INSERT,
                                  '1.0' + f' + {self.start + len(text)} chars')
+            self.inputs.see(INSERT)
             if self.is_realtime:
                 self.changed = True
                 self.realtime_run()
 
-    def close_select(self, e):
+    def close_select(self):
         if self.show_select:
             self.auto_complete_menu.destroy()
             self.show_select = False
@@ -719,19 +810,22 @@ class Root(Tk):
                     self.auto_complete_menu.selection_set(self.select_ind)
                     self.auto_complete_menu.see(self.select_ind)
 
-    def enter_choose(self, e):
+    def enter_choose(self):
         text = self.auto_complete_menu.get(ANCHOR)
-        self.auto_complete_menu.destroy()
-        self.show_select = False
-        self.inputs.delete('1.0', END)
-        self.pre_input = self.pre_input[:self.start] + text + self.pre_input[
-            self.start2:]
-        self.inputs.insert(END, self.pre_input)
-        self.inputs.mark_set(INSERT,
-                             '1.0' + f' + {self.start + len(text)} chars')
-        if self.is_realtime:
-            self.changed = True
-            self.realtime_run()
+        if text:
+            self.auto_complete_menu.destroy()
+            self.show_select = False
+            self.inputs.delete('1.0', END)
+            self.pre_input = self.pre_input[:self.
+                                            start] + text + self.pre_input[
+                                                self.start2:]
+            self.inputs.insert(END, self.pre_input)
+            self.inputs.mark_set(INSERT,
+                                 '1.0' + f' + {self.start + len(text)} chars')
+            self.inputs.see(INSERT)
+            if self.is_realtime:
+                self.changed = True
+                self.realtime_run()
 
     def auto_complete_run(self):
         if not self.is_auto:
@@ -756,36 +850,138 @@ class Root(Tk):
                     newline_ind, dot_ind = current_text2.rfind(
                         '\n') + 1, current_text2.rfind('.') + 1
                     start = max(newline_ind, dot_ind)
+                    start_min = min(newline_ind, dot_ind)
                     if dot_ind > newline_ind:
                         dot_word_ind = newline_ind
                         if current_text2[dot_word_ind] in ['/', '?']:
                             dot_word_ind += 1
-                        current_word = current_text2[dot_word_ind:dot_ind - 1]
-                        dot_content = current_text2[dot_ind:].lower()
-                        try:
-                            current_func = dir(eval(current_word))
-                            find_similar = [
-                                x for x in current_func
-                                if dot_content in x.lower()
-                            ]
-                            if find_similar:
-                                self.start = start
-                                self.start2 = start + len(dot_content)
-                                self.auto_complete(find_similar)
-                        except:
-                            pass
+
+                        current_word = current_text2[start_min:]
+                        original_current_word = current_word
+                        self.start = start_min
+                        inner_comma = False
+                        if '=' in current_word:
+                            new_current_word = current_word.split('=')[-1]
+                            if ',' in new_current_word:
+                                new_current_word = new_current_word.split(
+                                    ',')[-1].split(' ')[-1]
+                                if '.' not in new_current_word:
+                                    self.start = start_min + current_word.rindex(
+                                        new_current_word)
+                                    current_word = new_current_word
+                                else:
+                                    current_word = current_word.split('=')[-1]
+                                    inner_comma = True
+                            else:
+                                new_current_word = new_current_word.split(
+                                    ' ')[-1]
+                                self.start = start_min + current_word.rindex(
+                                    new_current_word)
+                                current_word = new_current_word
+                        elif ',' in current_word:
+                            new_current_word = current_word.split(
+                                ',')[-1].split(' ')[-1]
+                            if '.' not in new_current_word:
+                                self.start = start_min + current_word.rindex(
+                                    new_current_word)
+                                current_word = new_current_word
+                            else:
+                                inner_comma = True
+
+                        if current_word:
+                            if '.' in current_word:
+                                new_dot_ind = current_word.rindex('.')
+                                new_current_word = current_word[:new_dot_ind]
+                                dot_content = current_word[new_dot_ind +
+                                                           1:].lower()
+                                current_word = new_current_word
+                                try:
+                                    current_content = eval(current_word)
+                                    if inner_comma and type(
+                                            current_content) == tuple:
+                                        current_content = current_content[-1]
+                                    current_func = dir(current_content)
+                                    find_similar = [
+                                        x for x in current_func
+                                        if x.lower().startswith(dot_content)
+                                    ]
+                                    find_similar.sort()
+                                    find_similar2 = [
+                                        x for x in current_func
+                                        if dot_content in x.lower() and
+                                        not x.lower().startswith(dot_content)
+                                    ]
+                                    find_similar2.sort()
+                                    find_similar += find_similar2
+                                    if find_similar:
+                                        self.start = start
+                                        self.start2 = start + len(dot_content)
+                                        self.auto_complete(find_similar)
+                                except:
+                                    pass
+                            else:
+                                current_word = current_word.lower()
+                                find_similar = [
+                                    x for x in function_names
+                                    if x.lower().startswith(current_word)
+                                ]
+                                find_similar.sort()
+                                find_similar2 = [
+                                    x for x in function_names
+                                    if current_word in x.lower()
+                                    and not x.lower().startswith(current_word)
+                                ]
+                                find_similar2.sort()
+                                find_similar += find_similar2
+                                if find_similar:
+                                    self.start2 = start_min + len(
+                                        original_current_word)
+                                    self.auto_complete(find_similar)
+
                     else:
                         if current_text2[start] in ['/', '?']:
                             start += 1
                         current_word = current_text2[start:].lower()
-                        find_similar = [
-                            x for x in function_names
-                            if current_word in x.lower()
-                        ]
-                        if find_similar:
-                            self.start = start
-                            self.start2 = start + len(current_word)
-                            self.auto_complete(find_similar)
+                        original_current_word = current_word
+                        is_special = False
+                        if '=' in current_word:
+                            is_special = True
+                            new_current_word = current_word.split('=')[-1]
+                            if ',' in new_current_word:
+                                new_current_word = new_current_word.split(
+                                    ',')[-1].split(' ')[-1]
+                            else:
+                                new_current_word = new_current_word.split(
+                                    ' ')[-1]
+                            self.start = start + current_word.rindex(
+                                new_current_word)
+                            current_word = new_current_word
+                        elif ',' in current_word:
+                            is_special = True
+                            new_current_word = current_word.split(
+                                ',')[-1].split(' ')[-1]
+                            self.start = start + current_word.rindex(
+                                new_current_word)
+                            current_word = new_current_word
+                        if current_word:
+                            find_similar = [
+                                x for x in function_names
+                                if x.lower().startswith(current_word)
+                            ]
+                            find_similar.sort()
+                            find_similar2 = [
+                                x for x in function_names
+                                if current_word in x.lower()
+                                and not x.lower().startswith(current_word)
+                            ]
+                            find_similar2.sort()
+                            find_similar += find_similar2
+                            if find_similar:
+                                if not is_special:
+                                    self.start = start
+                                self.start2 = start + len(
+                                    original_current_word)
+                                self.auto_complete(find_similar)
         else:
             if not self.is_realtime:
                 self.changed = False
@@ -801,7 +997,7 @@ class Root(Tk):
     def auto_complete(self, find_similar):
         self.auto_complete_menu = Listbox(self)
         self.auto_complete_menu.bind("<<ListboxSelect>>",
-                                     lambda e: self.enter_choose(e))
+                                     lambda e: self.enter_choose())
         places = self.get_input_place()
         for each in find_similar:
             self.auto_complete_menu.insert(END, each)
@@ -818,7 +1014,8 @@ class Root(Tk):
         try:
             print(whole_translate(text))
         except:
-            pass
+            self.outputs.insert(END, '代码不合法\n')
+            self.outputs.insert(END, traceback.format_exc())
 
     def runs_2(self):
         self.inputs.edit_modified(False)
@@ -875,7 +1072,6 @@ class Root(Tk):
             if self.inputs.edit_modified():
                 self.pre_input = self.inputs.get('1.0', 'end-1c')
                 self.runs_2()
-
         self.after(100, self.realtime_run)
 
     def check_realtime(self):
@@ -889,63 +1085,52 @@ class Root(Tk):
                 self.is_realtime = 0
                 self.quit = True
 
+    def check_print(self):
+        self.is_print = self.no_print.get()
+
     def check_auto(self):
         self.is_auto = self.auto.get()
         if self.is_auto:
             self.auto_complete_run()
         else:
-            self.close_select(1)
+            self.close_select()
 
     def check_grammar(self):
         self.is_grammar = self.grammar.get()
 
-    def cut(self, editor, event=None):
-        editor.event_generate("<<Cut>>")
+    def cut(self):
+        self.inputs.event_generate("<<Cut>>")
 
-    def copy(self, editor, event=None):
-        editor.event_generate("<<Copy>>")
+    def copy(self):
+        self.inputs.event_generate("<<Copy>>")
 
-    def paste(self, editor, event=None):
-        editor.event_generate('<<Paste>>')
+    def paste(self):
+        self.inputs.event_generate('<<Paste>>')
 
-    def choose_all(self, editor, event=None):
-        editor.tag_add(SEL, '1.0', END)
-        editor.mark_set(INSERT, END)
-        editor.see(INSERT)
+    def choose_all(self):
+        self.inputs.tag_add(SEL, '1.0', END)
+        self.inputs.mark_set(INSERT, END)
+        self.inputs.see(INSERT)
 
-    def inputs_undo(self, editor, event=None):
+    def inputs_undo(self):
         try:
-            editor.edit_undo()
+            self.inputs.edit_undo()
         except:
             pass
 
-    def inputs_redo(self, editor, event=None):
+    def inputs_redo(self):
         try:
-            editor.edit_redo()
+            self.inputs.edit_redo()
         except:
             pass
 
-    def rightKey(self, event, editor):
-        self.menubar.delete(0, END)
-        self.menubar.add_command(label='剪切',
-                                 command=lambda: self.cut(editor),
-                                 foreground=self.foreground_color)
-        self.menubar.add_command(label='复制',
-                                 command=lambda: self.copy(editor),
-                                 foreground=self.foreground_color)
-        self.menubar.add_command(label='粘贴',
-                                 command=lambda: self.paste(editor),
-                                 foreground=self.foreground_color)
-        self.menubar.add_command(label='全选',
-                                 command=lambda: self.choose_all(editor),
-                                 foreground=self.foreground_color)
-        self.menubar.add_command(label='撤销',
-                                 command=lambda: self.inputs_undo(editor),
-                                 foreground=self.foreground_color)
-        self.menubar.add_command(label='恢复',
-                                 command=lambda: self.inputs_redo(editor),
-                                 foreground=self.foreground_color)
-        self.menubar.post(event.x_root, event.y_root)
+    def close_search_box(self):
+        for each in self.search_inds_list:
+            ind1, ind2 = each
+            self.inputs.tag_remove('highlight', ind1, ind2)
+            self.inputs.tag_remove('highlight_select', ind1, ind2)
+        self.search_box.destroy()
+        self.search_box_open = False
 
     def outputs_file(self, e=None):
         filename = filedialog.asksaveasfilename(initialdir=self.last_place,
@@ -960,6 +1145,97 @@ class Root(Tk):
             with open(filename, 'w', encoding='utf-8-sig') as f:
                 f.write(self.outputs.get('1.0', 'end-1c'))
 
+    def search_words(self):
+        if not self.search_box_open:
+            self.search_box_open = True
+        else:
+            self.search_box.focus_set()
+            self.search_entry.focus_set()
+            return
+        self.search_box = Toplevel(self, bg=self.background_color)
+        self.search_box.protocol("WM_DELETE_WINDOW", self.close_search_box)
+        self.search_box.title('搜索')
+        self.search_box.minsize(300, 200)
+        self.search_box.geometry('250x150+350+300')
+        self.search_text = ttk.Label(self.search_box, text='请输入想要搜索的内容')
+        self.search_text.place(x=0, y=0)
+        self.search_contents = StringVar()
+        self.search_contents.trace_add('write', self.search)
+        self.search_entry = Entry(self.search_box,
+                                  textvariable=self.search_contents)
+        self.search_entry.place(x=0, y=30)
+        self.search_entry.focus_set()
+        self.search_inds = 0
+        self.search_inds_list = []
+        self.inputs.tag_configure('highlight',
+                                  background=self.search_highlight_color[0])
+        self.inputs.tag_configure('highlight_select',
+                                  background=self.search_highlight_color[1])
+        self.search_up = ttk.Button(self.search_box,
+                                    text='上一个',
+                                    command=lambda: self.change_search_ind(-1))
+        self.search_down = ttk.Button(
+            self.search_box,
+            text='下一个',
+            command=lambda: self.change_search_ind(1))
+        self.search_up.place(x=0, y=60)
+        self.search_down.place(x=100, y=60)
+        self.case_sensitive = False
+        self.check_case_sensitive = IntVar()
+        self.check_case_sensitive.set(0)
+        self.case_sensitive_box = ttk.Checkbutton(
+            self.search_box, text='区分大小写', variable=self.check_case_sensitive)
+        self.case_sensitive_box.place(x=170, y=30)
+
+    def change_search_ind(self, ind):
+        length = len(self.search_inds_list)
+        if self.search_inds in range(length):
+            current_inds = self.search_inds_list[self.search_inds]
+            self.inputs.tag_remove('highlight_select', current_inds[0],
+                                   current_inds[1])
+        self.search_inds += ind
+        if self.search_inds < 0:
+            self.search_inds = length - 1
+        elif self.search_inds >= length:
+            self.search_inds = 0
+        if self.search_inds in range(length):
+            current_inds = self.search_inds_list[self.search_inds]
+            self.inputs.tag_add('highlight_select', current_inds[0],
+                                current_inds[1])
+            self.inputs.see(current_inds[1])
+
+    def search(self, *args):
+        all_text = self.inputs.get('1.0', 'end-1c')[:-1]
+
+        for each in self.search_inds_list:
+            ind1, ind2 = each
+            self.inputs.tag_remove('highlight', ind1, ind2)
+            self.inputs.tag_remove('highlight_select', ind1, ind2)
+        current = self.search_contents.get()
+        self.case_sensitive = self.check_case_sensitive.get()
+        if not self.case_sensitive:
+            all_text = all_text.lower()
+            current = current.lower()
+        self.search_inds_list = [[m.start(), m.end()]
+                                 for m in re.finditer(current, all_text)]
+        for each in self.search_inds_list:
+            ind1, ind2 = each
+            newline = "\n"
+            ind1 = f'{all_text[:ind1].count(newline)+1}.{ind1 - all_text[:ind1].rfind(newline) - 1}'
+            ind2 = f'{all_text[:ind2].count(newline)+1}.{ind2 - all_text[:ind2].rfind(newline) - 1}'
+            each[0] = ind1
+            each[1] = ind2
+        self.outputs.delete('1.0', END)
+        if self.search_inds_list:
+            for each in self.search_inds_list:
+                ind1, ind2 = each
+                self.inputs.tag_add('highlight', ind1, ind2)
+
+    def rightKey(self, event):
+        self.menubar.tk_popup(event.x_root, event.y_root)
+
 
 root = Root()
+root.focus_force()
+root.inputs.focus_set()
 root.mainloop()

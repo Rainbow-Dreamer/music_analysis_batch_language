@@ -16,6 +16,7 @@
     'foreground_color': 'black',
     'active_background_color': 'ivory2',
     'day_and_night_colors': ('white', 'gray8'),
+    'search_highlight_color': ['light blue', 'light green'],
     'button_background_color': 'light grey',
     'active_foreground_color': 'black',
     'disabled_foreground_color': 'white',
