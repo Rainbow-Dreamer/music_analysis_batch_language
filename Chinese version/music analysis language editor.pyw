@@ -26,7 +26,7 @@ class Root(Tk):
     def __init__(self):
         super(Root, self).__init__()
         self.minsize(1250, 600)
-        self.title('music analysis language editor')
+        self.title('作曲分析文件语言编辑器')
         self.focus_set()
         self.background_color = config_dict['background_color']
         self.foreground_color = config_dict['foreground_color']
@@ -280,6 +280,7 @@ class Root(Tk):
         self.inputs.bind('<Control-MouseWheel>',
                          lambda e: self.change_font_size(e))
 
+        self.search_box_open = False
         self.config_box_open = False
         self.protocol("WM_DELETE_WINDOW", self.close_window)
         self.check_if_edited()
@@ -288,9 +289,9 @@ class Root(Tk):
     def check_if_edited(self):
         current_text = self.inputs.get('1.0', 'end-1c')
         if current_text != self.last_save:
-            self.title('music analysis language editor *')
+            self.title('作曲分析文件语言编辑器 *')
         else:
-            self.title('music analysis language editor')
+            self.title('作曲分析文件语言编辑器')
         self.after(100, self.check_if_edited)
 
     def close_window(self):
@@ -749,7 +750,7 @@ class Root(Tk):
                     f.write(self.last_save)
             else:
                 self.save()
-            self.title('music analysis language editor')
+            self.title('作曲分析文件语言编辑器')
 
     def save(self):
         filename = filedialog.asksaveasfilename(initialdir=self.last_place,
@@ -1205,7 +1206,7 @@ class Root(Tk):
             self.inputs.see(current_inds[1])
 
     def search(self, *args):
-        all_text = self.inputs.get('1.0', 'end-1c')[:-1]
+        all_text = self.inputs.get('1.0', 'end-1c')
 
         for each in self.search_inds_list:
             ind1, ind2 = each
