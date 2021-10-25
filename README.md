@@ -22,15 +22,15 @@ This allows you to customize the content before the tonic, which defaults to ``k
 
 Then you can enter the chord progression and the corresponding chord progressions (usually roman numerals) for the composition analysis, with the syntax  
 ```
-current bar number; chord 1; chord 2; chord 3; ... $ chord steps 1; chord steps 2; chord steps 3;... $ Other parameter customization
+current bar number; chord 1; chord 2; chord 3; ... $ chord scale degree 1; chord scale degree 2; chord scale degree 3;... $ Other parameter customization
 ```
-First, the first argument is the number of bars, which can be any number, integer, decimal, fraction (actually it can be any string)  
-Then use `;` to separate it from the chord part, then every two chords are also separated by `;`, you can write as many as you want, and then use `$` as the ending  
+First, the first argument is the number of bars, which can be any number, integer, decimal, fraction (actually it can be any string).  
+Then use `;` to separate it from the chord part, then every two chords are also separated by `;`, you can write as many as you want, and then use `$` as the ending.  
 After that you can write the content of the chord progression, again separated by `;` and then also ending with `$`, followed by other parameter configurations.  
 If you want to display the chord you are currently playing, the syntax is to add `! `.  
 For example, if you want to display the currently playing chord 2, then you can write
 ```
-Current bar number; chord 1; ! chord2;chord3;... $ chord step 1; chord step 2; chord step 3;... $ other parameter customization
+Current bar number; chord 1; ! chord 2;chord 3;... $ chord scale degree 1; chord scale degree 2; chord scale degree 3;... $ other parameter customization
 ```
 It's worth mentioning here that my language is designed in such a way that the last chord name with `! ` in front of the chord name as a display of the chord currently being played.  
 So you can prefix multiple chords with `! `, you just need to make sure that the last `! ` is in front of the chord you want to display at the moment.
@@ -47,7 +47,7 @@ Possible parameter configurations.
 
 * a=character of the chord currently being played (you can set the character of the chord currently being played, the default is `→`)
 
-* ca=whether to show chord steps (if T, then show chord steps, if F, then don't show chord steps)
+* ca=whether to show chord scale degree (if T, then show chord scale degree, if F, then don't show chord scale degree)
 
 Next I'll demonstrate how this works.
 ```
@@ -59,7 +59,7 @@ It is possible to generate
 Cmaj7 | Dm11 | G9sus | Cmaj9#11
 IM7     ii11   V9sus   IM9#11
 ```
-Each chord and chord step is automatically aligned, saving you the trouble of laying out the chords yourself.  
+Each chord and chord scale degree is automatically aligned, saving you the trouble of laying out the chords yourself.  
 If it is to show the chord currently being played, then you can write
 ```
 1;Cmaj7;!D7;Fmaj7;Cmaj9(omit 3)$IM7;II7;IVM7;IM9
@@ -91,7 +91,7 @@ can generate
 1
 Cmaj7 | → D7 | Fmaj7 | Cmaj9(omit 3)
 ```
-If you don't want to display the content of the chord steps of the composition analysis, but you need to configure the parameters, for example, you don't want to display the number of current bars.  
+If you don't want to display the content of the chord scale degree of the composition analysis, but you need to configure the parameters, for example, you don't want to display the number of current bars.  
 then you can write `. ` or `~` or just leave it blank.
 ```
 Cmaj7;!D7;Fmaj7;Cmaj9(omit 3)$$b=F
