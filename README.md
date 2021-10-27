@@ -155,7 +155,7 @@ It is possible to read the composition analysis as generated above and display t
 
 Batch syntax generation for a few chords:  
 `[n*];chord name 1; chord name 2; chord name 3;... $ chord function 1; chord function 2; chord function 3;... `  
-`[n1,n2,n3,...] ;chord name1;chord name2;chord name3;... $ chord function 1;chord function 2;chord function 3;... `  
+`[n1,n2,n3,...] ;chord name 1;chord name 2;chord name 3;... $ chord function 1;chord function 2;chord function 3;... `  
 The n\* in the brackets here sets all the bars of the current line to n. n can be both absolute and relative bars, and relative bars are usually used more often. You can also write n1,n2,n3 in parentheses to set the number of bars for each chord in the current line in turn.
 
 I have written an editor specifically for this language, which writes code on the left and generates the corresponding composition content in real time on the right, as well as syntax highlighting and other functions.
