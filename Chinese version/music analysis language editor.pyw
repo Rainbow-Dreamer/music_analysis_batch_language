@@ -12,7 +12,7 @@ from copy import deepcopy as copy
 
 function_names = dir() + ['print']
 from music_analysis import whole_translate
-with open('config.py', encoding='utf-8-sig') as f:
+with open('config.py', encoding='utf-8') as f:
     exec(f.read())
 
 
@@ -391,8 +391,7 @@ class Root(Tk):
         if filename:
             self.current_filename_path = filename
             try:
-                with open(filename, encoding='utf-8-sig',
-                          errors='ignore') as f:
+                with open(filename, encoding='utf-8', errors='ignore') as f:
                     self.inputs.delete('1.0', END)
                     self.inputs.insert(END, f.read())
                     self.inputs.see(INSERT)
@@ -662,7 +661,7 @@ class Root(Tk):
                         config_dict[each] = eval(changed)
                     else:
                         config_dict[each] = changed
-        with open('config.py', 'w', encoding='utf-8-sig') as f:
+        with open('config.py', 'w', encoding='utf-8') as f:
             formated_config = FormatCode(f'config_dict = {config_dict}\n')[0]
             f.write(formated_config)
         if not outer:
@@ -728,9 +727,8 @@ class Root(Tk):
         if current_text != self.last_save:
             if self.current_filename_path:
                 self.last_save = self.inputs.get('1.0', 'end-1c')
-                with open(self.current_filename_path,
-                          'w',
-                          encoding='utf-8-sig') as f:
+                with open(self.current_filename_path, 'w',
+                          encoding='utf-8') as f:
                     f.write(self.last_save)
             else:
                 self.save()
@@ -744,7 +742,7 @@ class Root(Tk):
         if filename:
             self.current_filename_path = filename
             current_text = self.inputs.get('1.0', 'end-1c')
-            with open(filename, 'w', encoding='utf-8-sig') as f:
+            with open(filename, 'w', encoding='utf-8') as f:
                 f.write(current_text)
             self.last_save = current_text
 
@@ -1117,7 +1115,7 @@ class Root(Tk):
                                                 filetypes=(("所有文件", "*.*"), ),
                                                 defaultextension=".txt")
         if filename:
-            with open(filename, 'w', encoding='utf-8-sig') as f:
+            with open(filename, 'w', encoding='utf-8') as f:
                 f.write(self.outputs.get('1.0', 'end-1c'))
 
     def search_words(self):
