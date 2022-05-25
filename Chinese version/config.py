@@ -1,4 +1,4 @@
-﻿config_dict = {
+config_dict = {
     'eachline_character': 35,
     'pairing_symbols': ['()', '[]', "''", '""'],
     'wraplines_number': 2,
